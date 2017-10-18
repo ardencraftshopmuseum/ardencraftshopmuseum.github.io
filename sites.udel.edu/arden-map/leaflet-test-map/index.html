@@ -181,13 +181,14 @@ body.custom-background { background-color: #442e1f; background-image: url("../fi
 <script src="https://mapzen.com/js/mapzen.min.js"></script>
 <style>
   #map {
-    height: 50%;
-    width: 50%;
-    position: absolute;
+    height: 500px;
+    width: 800px;
+    position: relative;
   }
   html,body{margin: 0; padding: 0;}
 </style>
-<script type="text/javascript" src="../files/2017/10/arden-2ffhxz0.txt"></script>
+<script type="text/javascript" src="../files/2017/10/parcel_polygons_new.geojson"></script>
+<script type="text/javascript" src="../files/2017/10/us-de-ardens-fixed.geojson"></script>
 </head>
 
 <body class="page-template page-template-full-width-page page-template-full-width-page-php page page-id-850 custom-background wp-featherlight-captions single-author">
@@ -248,29 +249,95 @@ body.custom-background { background-color: #442e1f; background-image: url("../fi
 
 	<div class="entry-content post_content">
 		<div id="map"></div>
-		<script>
-		  L.Mapzen.apiKey = 'mapzen-CFbBe8d';
-		  const map = L.Mapzen.map('map');
-		  map.setView([39.81057,-75.4924248], 16);
-		  const lorem_ipsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-		  arden_parcels.features.filter(feature => feature.properties.PRCLID !== '1600400001' && feature.properties.PRCLID !== '2900100001').forEach((feature, idx) => {
-		    const props = feature.properties;
-		    let color;
-		    if (props.hasOwnProperty('TITLE')) {
-		      color = 'blue';
-		    } else {
-		      color = 'grey';
-		    }
-		    const polygon = L.polygon(feature.geometry.coordinates, {color: color, idx: idx});
-		    if (props.hasOwnProperty('TITLE')) {
-		      polygon.bindPopup(`<b>${props.TITLE}</b><BR/>${lorem_ipsum}`);
-		    } else {
-		      const address = `${props.STNO} ${props.PREDIR} ${props.STNAME} ${props.SUFFIX}`;
-		      polygon.bindPopup(`<b>${props.ADDRESS}</b>`);
-		    }
-		    polygon.addTo(map);
-		  });
-		</script>
+    <script>
+      L.Mapzen.apiKey = 'mapzen-CFbBe8d';
+      const map = L.Mapzen.map('map');
+      map.setView([39.809416, -75.486696], 16);
+      // map.setView([39.81057,-75.4924248], 16);
+      // map.dragging.disable();
+      // map.touchZoom.disable();
+      // map.doubleClickZoom.disable();
+      // map.scrollWheelZoom.disable();
+      // map.boxZoom.disable();
+
+      const lorem_ipsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+      locality_polygons.features.forEach((feature) => {
+        // lat/lon fields need to be switched
+        const polygon = L.polygon(feature.geometry.coordinates, { color: '#111111', weight: 1});
+        polygon.addTo(map);
+
+        L.marker(polygon.getBounds().getCenter(), {
+          icon: L.divIcon({
+            className: 'label',
+            html: feature.properties.name,
+            iconSize: [100, 40]
+          })
+        }).addTo(map);
+
+      });
+
+      parcel_polygons.features.forEach((feature, idx) => {
+        const props = feature.properties;
+
+        let color;
+
+        if (props.hasOwnProperty('TITLE')) {
+          color = 'blue';
+        } else {
+          color = '#222222';
+        }
+
+        const polygon = L.polygon(feature.geometry.coordinates, {color: color, weight: 1});
+        const address = `${props.ADDRESS}, ${props.SUBDIV}`;
+        if (props.hasOwnProperty('TITLE')) {
+          polygon.bindPopup(`<b>${props.TITLE}</b><BR/>${address}<BR/><BR/>${lorem_ipsum}`);
+        } else {
+          polygon.bindPopup(`<b>${address}</b>`);
+        }
+        polygon.addTo(map);
+
+        // L.marker(polygon.getBounds().getCenter(), {
+        //   icon: L.divIcon({
+        //     className: 'label',
+        //     html: feature.properties.PRCLKY,
+        //     iconSize: [100, 40]
+        //   })
+        // }).addTo(map);
+
+
+      });
+
+
+      var command = L.control({position: 'topright'});
+
+      command.onAdd = function (map) {
+          var div = L.DomUtil.create('div', 'command');
+
+          div.innerHTML = '<form>';
+          div.innerHTML += '<input id="decade_1900_1909" type="checkbox"/>1900-1909</input>';
+          div.innerHTML += '<input id="decade_1910_1919" type="checkbox"/>1910-1919</input>';
+          div.innerHTML += '<input id="decade_1920_1929" type="checkbox"/>1920-1929</input>';
+          div.innerHTML += '<input id="decade_1930_1939" type="checkbox"/>1930-1939</input>';
+          div.innerHTML += '<input id="decade_1940_1949" type="checkbox"/>1940-1949</input>';
+          div.innerHTML += '<input id="decade_1950_1959" type="checkbox"/>1950-1959</input>';
+          div.innerHTML += '<input id="decade_1960_1969" type="checkbox"/>1960-1969</input>';
+          div.innerHTML += '</form>';
+
+          return div;
+      };
+
+      command.addTo(map);
+
+
+      // add the event handler
+      function handleCommand() {
+         alert("Clicked, checked = " + this.checked);
+      }
+
+      document.getElementById ("command").addEventListener ("click", handleCommand, false);
+
+    </script>
 
 
 <div class="printfriendly pf-alignleft"><a href="http://www.printfriendly.com/print?url=http://sites.udel.edu/arden-map/leaflet-test-map/" rel="nofollow" onclick="window.print(); return false;"><img style="border:none;-webkit-box-shadow:none; box-shadow:none;" src="http://cdn.printfriendly.com/pf-button.gif" alt="Print Friendly" /></a></div>			</div><!-- .entry-content -->
