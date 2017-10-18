@@ -1,0 +1,5 @@
+# HTTrack Website Copier Cookie File
+# This file format is compatible with Netscape cookies
+sites.udel.edu	TRUE	/	FALSE	1999999999	xid	0Q8TrFnnhjZMsAS+Az1dAg==
+sites.udel.edu	TRUE	/	FALSE	1999999999	PHPSESSID	ov77a2out01ob5o8b9d3v94n06
+
