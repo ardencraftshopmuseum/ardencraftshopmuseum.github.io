@@ -380,7 +380,7 @@ body.custom-background { background-color: #442e1f; background-image: url("files
             content += `<b>${title}</b><br clear="all"/>`;
           }
 
-          content += `${address}<br/>Leaseholder: ${leaseHolder}<br/>`;
+          content += `<b>${address}</b><br/>Leaseholder: ${leaseHolder}<br/>`;
 
           if (props.hasOwnProperty('IMAGES')) {
             for (var i = 0; i < props.IMAGES.length; i++) {
@@ -389,7 +389,7 @@ body.custom-background { background-color: #442e1f; background-image: url("files
           }
           content += "</div>";
 
-          polygon.bindPopup(content, { maxWidth: 1000, autoPanPaddingTopLeft: L.point(0, 300) });
+          polygon.bindPopup(content, { maxWidth: 1000, autoPanPaddingTopLeft: L.point(0, 150) });
 
         }
 
