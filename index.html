@@ -177,6 +177,51 @@ img.latex { vertical-align: middle; border: none; }
 <style type="text/css" id="custom-background-css">
 body.custom-background { background-color: #442e1f; background-image: url("files/2017/09/William_Morris_Red_Poppies_Mouse_Pad_Rounded_Edges_1024x1024-1236lff.png"); background-position: center center; background-size: cover; background-repeat: no-repeat; background-attachment: fixed; }
 </style>
+
+<link rel="stylesheet" href="https://mapzen.com/js/mapzen.css">
+<script src="https://mapzen.com/js/mapzen.min.js"></script>
+<script type="text/javascript" src="files/2017/10/parcel_polygons.geojson"></script>
+<script type="text/javascript" src="files/2017/10/locality_polygons.geojson"></script>
+<style>
+  #map {
+    height: 500px;
+    width: 950px;
+    position: relative;
+  }
+  html,body{margin: 0; padding: 0;}
+</style>
+<style>
+  .parcelContainer {
+    text-align: left;
+    position: relative;
+    display: block;
+  }
+  .parcelContainer img {
+    display: block;
+    position: relative;
+  }
+  .eras_class {
+    padding: 10px;
+    background-color: #FFF;
+  }
+  .eras_class table tr td {
+    border: 0px;
+    padding: 1px;
+  }
+  .eras_class td.arden {
+    background-color: red;
+    opacity: 0.5;
+  }
+  .eras_class td.ardentown {
+    background-color: yellow;
+    opacity: 0.5;
+  }
+  .eras_class td.ardencroft {
+    background-color: green;
+    opacity: 0.5;
+  }
+</style>
+
 </head>
 
 <body class="home page-template page-template-full-width-page page-template-full-width-page-php page page-id-2 custom-background wp-featherlight-captions single-author">
@@ -236,18 +281,187 @@ body.custom-background { background-color: #442e1f; background-image: url("files
 	</header><!-- .entry-header -->
 
 	<div class="entry-content post_content">
-		<p>&nbsp;</p>
-<p>Note: Due to revisions of the lease hold lines, all historical locations are approximate.</p>
-<div class="printfriendly pf-alignleft"><a href="http://www.printfriendly.com/print?url=http://sites.udel.edu/arden-map/" rel="nofollow" onclick="window.print(); return false;"><img style="border:none;-webkit-box-shadow:none; box-shadow:none;" src="http://cdn.printfriendly.com/pf-button.gif" alt="Print Friendly" /></a></div>			</div><!-- .entry-content -->
+    <div id="map"></div>
+    <script>
+      const initialLatLon = [39.809416, -75.486696];
+      const initialZoomLevel = 15;
+
+      function eraChanged() {
+        localities["Arden"].polygon.remove(map);
+        localities["Arden"].parcels.forEach(parcel => parcel.remove(map));
+
+        localities["Ardentown"].polygon.remove(map);
+        localities["Ardentown"].parcels.forEach(parcel => parcel.remove(map));
+
+        localities["Ardencroft"].polygon.remove(map);
+        localities["Ardencroft"].parcels.forEach(parcel => parcel.remove(map));
+
+        if (document.getElementById('by_1910').checked) {
+          localities["Arden"].polygon.addTo(map);
+          localities["Arden"].parcels.forEach(parcel => parcel.addTo(map));
+
+        } else if (document.getElementById('by_1947').checked) {
+          localities["Arden"].polygon.addTo(map);
+          localities["Ardentown"].polygon.addTo(map);
+          localities["Ardentown"].parcels.forEach(parcel => parcel.addTo(map));
+
+        } else if (document.getElementById('by_1956').checked) {
+          localities["Arden"].polygon.addTo(map);
+          localities["Ardentown"].polygon.addTo(map);
+          localities["Ardencroft"].polygon.addTo(map);
+          localities["Ardencroft"].parcels.forEach(parcel => parcel.addTo(map));
+        }
+
+      }
+
+      function recenterMap() {
+        map.setView(initialLatLon, initialZoomLevel);
+      }
+
+      L.Mapzen.apiKey = 'mapzen-CFbBe8d';
+      const map = L.Mapzen.map('map');
+      map.setView(initialLatLon, initialZoomLevel);
+
+      const localities = {};
+
+      locality_polygons.features.forEach(feature => {
+        const polygon = L.polygon(feature.geometry.coordinates, {
+          color: getLocalityColor(feature.properties.name),
+          weight: 1}
+        );
+
+        localities[feature.properties.name] = {
+          polygon: polygon,
+          parcels: []
+        };
+
+      });
+
+      function getLocalityColor(name) {
+        if (name === 'Arden') {
+          return 'red';
+        } else if (name === 'Ardencroft') {
+          return 'green';
+        } else { // ARDENTOWN
+          return 'yellow';
+        }
+      }
+
+      function createParcelPolygon(feature, era) {
+        const props = feature.properties;
+
+        let color;
+
+        if (props.hasOwnProperty('IMAGES')) {
+          color = 'blue';
+        } else {
+          color = '#444444';
+        }
+
+        const polygon = L.polygon(feature.geometry.coordinates, { color: color, weight: 1 });
+        const address = `${props.ADDRESS}, ${props.SUBDIV}`;
+
+        const title = props.TITLE ? props.TITLE : '';
+        const leaseHolder = props[era] ? props[era] : 'Unknown';
+
+        // setup the tooltip
+        var tooltipText = '';
+        if (title) {
+          tooltipText += `<b>${title}</b><br clear="all"/>`;
+        }
+        tooltipText += `<b>${address}</b><br clear="all"/>`;
+        tooltipText += `Leaseholder: ${leaseHolder}`;
+        polygon.bindTooltip(tooltipText);
+
+        // if the parcel has images, create and bind to a popup
+        if (props.hasOwnProperty('IMAGES')) {
+          var content = '<div class="parcelContainer">';
+          if (title) {
+            content += `<b>${title}</b><br clear="all"/>`;
+          }
+
+          content += `${address}<br/>Leaseholder: ${leaseHolder}<br/>`;
+
+          if (props.hasOwnProperty('IMAGES')) {
+            for (var i = 0; i < props.IMAGES.length; i++) {
+              content += `<br><a href="${props.IMAGES[i]}" target="_new"><img src="${props.URLS[i]}" width="350"/></a>`;
+            }
+          }
+          content += "</div>";
+
+          polygon.bindPopup(content, { maxWidth: 1000, autoPanPaddingTopLeft: L.point(0, 300) });
+
+        }
+
+        return polygon;
+
+      }
+
+      parcel_polygons.features.forEach(feature => {
+        const props = feature.properties;
+
+        if (props.SUBDIV === 'Arden') {
+          // push Arden parcel polygons onto all 3 eras
+          localities["Arden"].parcels.push(createParcelPolygon(feature, 'BY_1910'));
+          // add to Ardentown parcels using 1947 ownership data
+          localities["Ardentown"].parcels.push(createParcelPolygon(feature, 'BY_1947'));
+          // add to Ardencroft parcels using 1956 ownership data
+          localities["Ardencroft"].parcels.push(createParcelPolygon(feature, 'BY_1956'));
+
+        } else if (props.SUBDIV === 'Ardentown') {
+          // push Ardentown parcel polygons onto last 2 eras
+          // add to Ardentown parcels using 1947 ownership data
+          localities["Ardentown"].parcels.push(createParcelPolygon(feature, 'BY_1947'));
+          localities["Ardencroft"].parcels.push(createParcelPolygon(feature, 'BY_1956'));
+
+        } else if (props.SUBDIV === 'Ardencroft') {
+          // push Ardentown parcel polygons onto last era using BY_1956
+          localities["Ardencroft"].parcels.push(createParcelPolygon(feature, 'BY_1956'));
+
+        }
+
+      });
+
+      // setup the eras radio buttons
+      var eras = L.control({position: 'topright'});
+      eras.onAdd = map => {
+        var content = '<div class="eras_class">';
+        content += '<form>';
+        content += '<b>Known Leaseholders</b><br>';
+        content += '<input id="by_1910" name="era" value="by_1910" type="radio" checked="checked"/>by 1910</input><br clear="all"/>';
+        content += '<input id="by_1947" name="era" value="by_1947" type="radio"/>by 1947</input><br clear="all"/>';
+        content += '<input id="by_1956" name="era" value="by_1956" type="radio"/>by 1956</input><br clear="all"/><br clear="all"/>';
+        content += '<input id="recenter" name="recenter" type="button" value="Re-center Map"></input>';
+        content += '</form>';
+        content += '<table>';
+        content += '<tr><td>Arden</td><td class="arden">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>';
+        content += '<tr><td>Ardentown</td><td class="ardentown">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>';
+        content += '<tr><td>Ardencroft</td><td class="ardencroft">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>';
+        content += '</table>';
+        content += '</div>';
+
+        const div = L.DomUtil.create('div', 'command');
+        div.innerHTML = content;
+
+        return div;
+      };
+      eras.addTo(map);
+
+      // call eraChanged whenever an era radio button is selected
+      document.getElementById('by_1910').addEventListener('click', eraChanged, false);
+      document.getElementById('by_1947').addEventListener('click', eraChanged, false);
+      document.getElementById('by_1956').addEventListener('click', eraChanged, false);
+      document.getElementById('recenter').addEventListener('click', recenterMap, false);
+
+      // trigger initial map population
+      eraChanged();
+    </script>
+
+
+
+    <div class="printfriendly pf-alignleft"><a href="http://www.printfriendly.com/print?url=http://sites.udel.edu/arden-map/" rel="nofollow" onclick="window.print(); return false;"><img style="border:none;-webkit-box-shadow:none; box-shadow:none;" src="http://cdn.printfriendly.com/pf-button.gif" alt="Print Friendly" /></a></div>			</div><!-- .entry-content -->
 	</article><!-- #post-2 -->
 
-					<div id="comments">
-
-
-
-
-
-</div><!-- #comments -->
 
 
 		</div>
